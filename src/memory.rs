@@ -10,6 +10,7 @@ const MAX_MEMORY_SIZE: usize = 4096;
 pub struct Memory {
     stack: Vec<u8>,
     pc: u16,
+    read_pc: u16,
 }
 
 #[allow(dead_code)]
@@ -18,6 +19,7 @@ impl Memory {
         Self {
             stack: vec![0x0; MAX_MEMORY_SIZE],
             pc: 0x200,
+            read_pc: 0x200,
         }
     }
 
@@ -28,11 +30,12 @@ impl Memory {
         }
     }
 
-    pub fn read(&self, size: u8) -> u16 {
+    pub fn read(&mut self, size: u8) -> u16 {
         let mut bytes_readed: [u8; 2] = [0, 0];
 
         for i in 0..size {
-            bytes_readed[i as usize] = self.stack[512 + i as usize];
+            bytes_readed[i as usize] = self.stack[self.read_pc as usize];
+            self.read_pc += 1;
         }
 
         let byte_1 = bytes_readed[0] as u16;

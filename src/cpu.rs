@@ -5,8 +5,7 @@ const N_CPU_REGISTERS: u8 = 16;
 
 #[allow(dead_code)]
 pub struct CPU {
-    registers: Vec<u8>,
-    program_counter: u16,
+    pub registers: Vec<u8>,
     memory: Memory,
 }
 
@@ -15,7 +14,6 @@ impl CPU {
     pub fn new() -> Self {
         Self {
             registers: vec![0x0; N_CPU_REGISTERS as usize],
-            program_counter: 0x200, // 0x200 = 512 that is the system reserved memory
             memory: Memory::new(),
         }
     }
@@ -31,7 +29,7 @@ impl CPU {
     /// F -> Third nibble   (y) -> Register to look
     /// 1 -> A 4 bit number (n) -> value to use ?
 
-    fn parse_opcode(&self) -> (u8, u8, u8, u8) {
+    fn parse_opcode(&mut self) -> (u8, u8, u8, u8) {
         let opcode = self.memory.read(2);
 
         let c = ((opcode & 0xF000) >> 12) as u8;
@@ -45,41 +43,42 @@ impl CPU {
     fn add_operation(&mut self, x: u8, y: u8, val1: u16, val2: u16) -> (bool, u16) {
         println!("Add: Vx += Vy!");
 
-        if (val1 + val2) as u16 > 255 {
+        let x_register = self.registers[x as usize];
+        let y_register = self.registers[y as usize];
+
+        // Cast to u16 to avoid panicking when attempting an overflow
+        if (x_register as u16 + y_register as u16) > 255 {
             return (true, 0);
         }
 
-        // register x = 1
-        self.registers[x as usize] = val1 as u8;
-        // register y = 2
-        self.registers[y as usize] = val2 as u8;
-        // register x += register y
-        self.registers[x as usize] += self.registers[y as usize];
+        self.registers[x as usize] = x_register + y_register;
 
         (false, val1 + val2)
     }
 
     pub fn run(&mut self) {
-        let opcodes = self.parse_opcode();
+        loop {
+            let opcodes = self.parse_opcode();
 
-        match opcodes.0 {
-            0x8 => match opcodes.3 {
-                4 => {
+            match opcodes {
+                (0x8, _, _, 0x4) => {
                     let (overflow, val) = self.add_operation(opcodes.1, opcodes.2, 252, 3);
 
                     if overflow {
                         self.registers[15] = 1;
                     }
                 }
-                _ => println!("Non reconigsed N"),
-            },
-            _ => panic!("Opcode not identified!"),
+                (0, 0, 0, 0) => {
+                    return;
+                }
+                _ => panic!("Opcode not identified!"),
+            }
         }
     }
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::CPU;
 
     #[test]
@@ -87,10 +86,14 @@ mod test {
         let mut cpu = CPU::new();
 
         cpu.set_opcode(0x8324);
+
+        cpu.registers[3] = 3;
+        cpu.registers[2] = 2;
+
         cpu.run();
 
-        assert_eq!(cpu.registers[3], 4);
-        assert_eq!(cpu.registers[2], 3);
+        assert_eq!(cpu.registers[3], 5);
+        assert_eq!(cpu.registers[2], 2);
     }
 
     #[test]
@@ -98,6 +101,10 @@ mod test {
         let mut cpu = CPU::new();
 
         cpu.set_opcode(0x8324);
+
+        cpu.registers[3] = 255;
+        cpu.registers[2] = 1;
+
         cpu.run();
 
         assert_eq!(cpu.registers[15], 1);
