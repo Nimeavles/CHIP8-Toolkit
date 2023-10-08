@@ -1,12 +1,17 @@
 /// Opcodes -> https://en.wikipedia.org/wiki/CHIP-8
-use crate::memory::Memory;
+use crate::memory::{Memory, Stack};
 
 const N_CPU_REGISTERS: u8 = 16;
 
+type Opcode = (u8, u8, u8, u8);
+
+#[derive(Debug)]
 #[allow(dead_code)]
 pub struct CPU {
     pub registers: Vec<u8>,
     memory: Memory,
+    stack_pointer: u16,
+    stack: Stack,
 }
 
 #[allow(dead_code, unused_variables)]
@@ -15,6 +20,8 @@ impl CPU {
         Self {
             registers: vec![0x0; N_CPU_REGISTERS as usize],
             memory: Memory::new(),
+            stack: Stack::new(),
+            stack_pointer: 0x0,
         }
     }
 
@@ -40,7 +47,7 @@ impl CPU {
         (c, x, y, d)
     }
 
-    fn add_operation(&mut self, x: u8, y: u8, val1: u16, val2: u16) -> (bool, u16) {
+    fn add_operation(&mut self, x: u8, y: u8) -> bool {
         println!("Add: Vx += Vy!");
 
         let x_register = self.registers[x as usize];
@@ -48,25 +55,47 @@ impl CPU {
 
         // Cast to u16 to avoid panicking when attempting an overflow
         if (x_register as u16 + y_register as u16) > 255 {
-            return (true, 0);
+            return true;
         }
 
         self.registers[x as usize] = x_register + y_register;
 
-        (false, val1 + val2)
+        false
+    }
+
+    fn call_operation(&mut self, address: u16) {
+        // Store the current memory location on the stack.
+        self.stack.push(self.memory.read_pc, self.stack_pointer);
+
+        // Increment the stack pointer.
+        self.stack_pointer += 1;
+
+        // Jump to the called address
+        self.memory.read_pc = address;
+    }
+
+    fn parse_12bit_address(&self, opcode: Opcode) -> u16 {
+        let op1 = opcode.1 as u16;
+        let op2 = opcode.2 as u16;
+        let op3 = opcode.3 as u16;
+
+        op3 << 0 | op2 << 4 | op1 << 8
     }
 
     pub fn run(&mut self) {
         loop {
-            let opcodes = self.parse_opcode();
+            let opcodes: Opcode = self.parse_opcode();
 
             match opcodes {
                 (0x8, _, _, 0x4) => {
-                    let (overflow, val) = self.add_operation(opcodes.1, opcodes.2, 252, 3);
+                    let overflow = self.add_operation(opcodes.1, opcodes.2);
 
                     if overflow {
                         self.registers[15] = 1;
                     }
+                }
+                (0x2, _, _, _) => {
+                    self.call_operation(self.parse_12bit_address(opcodes));
                 }
                 (0, 0, 0, 0) => {
                     return;
@@ -75,6 +104,11 @@ impl CPU {
             }
         }
     }
+
+    // RETURN
+    // Decrement the stack pointer.
+    // Retrieve the calling memory address from the stack.
+    // Set the current memory location to the intended memory address
 }
 
 #[cfg(test)]
@@ -82,7 +116,7 @@ mod tests {
     use super::CPU;
 
     #[test]
-    fn test_cpu_add() {
+    fn test_cpu_add_instruction() {
         let mut cpu = CPU::new();
 
         cpu.set_opcode(0x8324);
@@ -108,5 +142,19 @@ mod tests {
         cpu.run();
 
         assert_eq!(cpu.registers[15], 1);
+    }
+
+    #[test]
+    fn test_cpu_call_instruction() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x8324);
+
+        cpu.registers[3] = 2;
+        cpu.registers[2] = 1;
+
+        cpu.set_opcode(0x2000);
+
+        cpu.run();
     }
 }
