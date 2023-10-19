@@ -25,17 +25,24 @@ impl CPU {
         }
     }
 
+    /**
+     * Writes the given opcode on memory
+     */
     pub fn set_opcode(&mut self, opcode: u16) {
         self.memory.write(opcode);
     }
 
-    /// CPU OPCODE DECODING
-    /// 0X80F12
-    /// 8 -> First nibble (4bits)
-    /// 0 -> Second nibble  (x) -> Register to look
-    /// F -> Third nibble   (y) -> Register to look
-    /// 1 -> A 4 bit number (n) -> value to use ?
+    // CPU OPCODE DECODING
+    // 0X80F12
+    // 8 -> First nibble (4bits)
+    // 0 -> Second nibble  (x) -> Register to look
+    // F -> Third nibble   (y) -> Register to look
+    // 1 -> A 4 bit number (n) -> value to use ?
 
+    /**
+      Parses the given opcode and returns an
+      **u8 tuple** with each nibble
+    */
     fn parse_opcode(&mut self) -> (u8, u8, u8, u8) {
         let opcode = self.memory.read(2);
 
@@ -47,6 +54,9 @@ impl CPU {
         (c, x, y, d)
     }
 
+    /**
+     * Performs the add operation
+     */
     fn add_operation(&mut self, x: u8, y: u8) -> bool {
         println!("Add: V{x} += V{y}!");
 
@@ -63,6 +73,9 @@ impl CPU {
         false
     }
 
+    /**
+     * Performs the call operation
+     */
     fn call_operation(&mut self, address: u16) {
         // Store the current memory location on the stack.
         self.stack.push(self.memory.read_pc, self.stack_pointer);
@@ -74,6 +87,9 @@ impl CPU {
         self.memory.read_pc = address;
     }
 
+    /**
+     * Performs the ret operation
+     */
     fn ret_operation(&mut self) {
         // Decrement the stack pointer.
         self.stack_pointer -= 1;
@@ -90,6 +106,11 @@ impl CPU {
         op3 << 0 | op2 << 4 | op1 << 8
     }
 
+    /**
+    * Enter into a loop with will fetch opcodes from memory,
+      then it would be parsed and matched to be executed.
+    * It is considered the entry point of the program
+    */
     pub fn run(&mut self) {
         loop {
             let opcodes: Opcode = self.parse_opcode();

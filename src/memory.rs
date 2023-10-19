@@ -50,6 +50,9 @@ impl Memory {
         }
     }
 
+    /**
+     * Writes an 16bits opcode into memory
+     */
     pub fn write(&mut self, data: u16) {
         for i in data.to_le_bytes() {
             self.memory[self.pc as usize] = i;
@@ -57,6 +60,9 @@ impl Memory {
         }
     }
 
+    /**
+     * Writes an 16 bits opcode on a given memory address
+     */
     pub fn write_into(&mut self, data: u16, address: u16) {
         if address as usize > MAX_MEMORY_SIZE {
             panic!("Address out of bound!");
@@ -70,6 +76,9 @@ impl Memory {
         }
     }
 
+    /**
+     * Read x bytes from memory and returs it in a 16bits format
+     */
     pub fn read(&mut self, size: u8) -> u16 {
         let mut bytes_readed: [u8; 2] = [0, 0];
 
