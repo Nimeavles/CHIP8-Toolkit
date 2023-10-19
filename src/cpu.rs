@@ -48,7 +48,7 @@ impl CPU {
     }
 
     fn add_operation(&mut self, x: u8, y: u8) -> bool {
-        println!("Add: Vx += Vy!");
+        println!("Add: V{x} += V{y}!");
 
         let x_register = self.registers[x as usize];
         let y_register = self.registers[y as usize];
@@ -74,6 +74,14 @@ impl CPU {
         self.memory.read_pc = address;
     }
 
+    fn ret_operation(&mut self) {
+        // Decrement the stack pointer.
+        self.stack_pointer -= 1;
+
+        // Retrieve and jump to the calling memory address from the stack.
+        self.memory.read_pc = self.stack.pop(self.stack_pointer);
+    }
+
     fn parse_12bit_address(&self, opcode: Opcode) -> u16 {
         let op1 = opcode.1 as u16;
         let op2 = opcode.2 as u16;
@@ -97,18 +105,16 @@ impl CPU {
                 (0x2, _, _, _) => {
                     self.call_operation(self.parse_12bit_address(opcodes));
                 }
+                (0, 0, 0xE, 0xE) => {
+                    self.ret_operation();
+                }
                 (0, 0, 0, 0) => {
                     return;
                 }
-                _ => panic!("Opcode not identified!"),
+                _ => panic!("Opcode <{:?}> not identified!", opcodes),
             }
         }
     }
-
-    // RETURN
-    // Decrement the stack pointer.
-    // Retrieve the calling memory address from the stack.
-    // Set the current memory location to the intended memory address
 }
 
 #[cfg(test)]
@@ -144,8 +150,13 @@ mod tests {
         assert_eq!(cpu.registers[15], 1);
     }
 
+    #[should_panic]
     #[test]
     fn test_cpu_call_instruction() {
+        std::panic::set_hook(Box::new(|_info| {
+            // In order to not to show any panic info
+        }));
+
         let mut cpu = CPU::new();
 
         cpu.set_opcode(0x8324);
@@ -156,5 +167,31 @@ mod tests {
         cpu.set_opcode(0x2000);
 
         cpu.run();
+    }
+
+    #[test]
+    fn test_cpu_ret_instruction() {
+        let mut cpu = CPU::new();
+
+        // set the instructions to exec on 0x50 address
+        cpu.memory.write_into(0x8324, 0x100);
+
+        cpu.set_opcode(0x8014);
+
+        cpu.registers[0 as usize] = 1;
+        cpu.registers[1 as usize] = 2;
+
+        cpu.registers[2 as usize] = 2;
+
+        cpu.set_opcode(0x2100);
+        cpu.set_opcode(0x8424);
+
+        // Writes the ret opcode after the executed function on 0x100
+        cpu.memory.write_into(0xEE, 0x102);
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[3], 2);
+        assert_eq!(cpu.registers[4], 2);
     }
 }

@@ -1,7 +1,7 @@
 use std::vec;
 
 #[allow(dead_code)]
-const MAX_MEMORY_SIZE: usize = 10;
+const MAX_MEMORY_SIZE: usize = 4096;
 const MAX_STACK_SIZE: usize = 16;
 
 /// Max size is 4096 bytes (4kb)
@@ -23,6 +23,12 @@ impl Stack {
 
     pub fn push(&mut self, address: u16, sp: u16) {
         self.stack[sp as usize] = address;
+    }
+
+    pub fn pop(&mut self, sp: u16) -> u16 {
+        let addr = self.stack[sp as usize];
+        self.stack[sp as usize] = 0x0;
+        addr
     }
 }
 
@@ -48,6 +54,19 @@ impl Memory {
         for i in data.to_le_bytes() {
             self.memory[self.pc as usize] = i;
             self.pc += 1;
+        }
+    }
+
+    pub fn write_into(&mut self, data: u16, address: u16) {
+        if address as usize > MAX_MEMORY_SIZE {
+            panic!("Address out of bound!");
+        }
+
+        let mut address_to_write = address;
+
+        for i in data.to_le_bytes() {
+            self.memory[address_to_write as usize] = i;
+            address_to_write += 1;
         }
     }
 
