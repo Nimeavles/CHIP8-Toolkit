@@ -6,6 +6,8 @@
 
 - [🖇️Rust In Action (Book)](https://www.amazon.es/Rust-Action-Tim-McNamara/dp/1617294551)
 
+- [🖇️Rust In Action Code](https://github.com/rust-in-action/code)
+
 - [🖇️Cpp Chip8 Emulator Example](https://github.com/JamesGriffin/CHIP-8-Emulator/)
 
 - [🖇️Chip8 rust toolkit Example](https://github.com/cg-jl/CHIP8)
