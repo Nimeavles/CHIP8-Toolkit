@@ -77,7 +77,7 @@ impl Memory {
     }
 
     /**
-     * Read x bytes from memory and returs it in a 16bits format
+     * Read x bytes from memory and returns it in a 16 bits format
      */
     pub fn read(&mut self, size: u8) -> u16 {
         let mut bytes_readed: [u8; 2] = [0, 0];

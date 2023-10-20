@@ -55,6 +55,17 @@ impl CPU {
     }
 
     /**
+     * Assign a value to a register. Vx = NN
+     */
+    fn set_value_to_register_operation(&mut self, register: u8, value: u8) {
+        if register > 16 {
+            panic!("Attempted to write on an undefined register: {register}");
+        }
+
+        self.registers[register as usize] = value;
+    }
+
+    /**
      * Performs the add operation
      */
     fn add_operation(&mut self, x: u8, y: u8) -> bool {
@@ -116,6 +127,12 @@ impl CPU {
             let opcodes: Opcode = self.parse_opcode();
 
             match opcodes {
+                // Assign a value to a register. Vx = NN
+                (0x6, _, _, _) => {
+                    let value_to_set = opcodes.2 << 4 | opcodes.3;
+
+                    self.set_value_to_register_operation(opcodes.1, value_to_set);
+                }
                 (0x8, _, _, 0x4) => {
                     let overflow = self.add_operation(opcodes.1, opcodes.2);
 
@@ -158,7 +175,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_cpu_overflow() {
+    fn test_cpu_add_overflow() {
         let mut cpu = CPU::new();
 
         cpu.set_opcode(0x8324);
@@ -214,5 +231,17 @@ mod tests {
 
         assert_eq!(cpu.registers[3], 2);
         assert_eq!(cpu.registers[4], 2);
+    }
+
+    #[test]
+    fn test_cpu_set_value_to_register_instruction() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x6012);
+
+        cpu.run();
+
+        // 0x12 -> 18
+        assert_eq!(cpu.registers[0], 18);
     }
 }
