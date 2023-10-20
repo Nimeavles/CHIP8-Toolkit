@@ -58,7 +58,7 @@ impl CPU {
      * Assign a value to a register. Vx = NN
      */
     fn set_value_to_register_operation(&mut self, register: u8, value: u8) {
-        if register > 16 {
+        if register > N_CPU_REGISTERS {
             panic!("Attempted to write on an undefined register: {register}");
         }
 
@@ -82,6 +82,13 @@ impl CPU {
         self.registers[x as usize] = x_register + y_register;
 
         false
+    }
+
+    /**
+     * Exec jp instruction
+     */
+    fn jp_operation(&mut self, address: u16) {
+        self.memory.read_pc = address;
     }
 
     /**
@@ -133,6 +140,7 @@ impl CPU {
 
                     self.set_value_to_register_operation(opcodes.1, value_to_set);
                 }
+                // Add operation. Vx += Vy
                 (0x8, _, _, 0x4) => {
                     let overflow = self.add_operation(opcodes.1, opcodes.2);
 
@@ -140,12 +148,20 @@ impl CPU {
                         self.registers[15] = 1;
                     }
                 }
+                // Jp instruction. jp NNN
+                (0x1, _, _, _) => {
+                    let parsed_address_to_jump = self.parse_12bit_address(opcodes);
+                    self.jp_operation(parsed_address_to_jump);
+                }
+                // Call instruction
                 (0x2, _, _, _) => {
                     self.call_operation(self.parse_12bit_address(opcodes));
                 }
+                // Ret instruction
                 (0, 0, 0xE, 0xE) => {
                     self.ret_operation();
                 }
+                // Halt instruction
                 (0, 0, 0, 0) => {
                     return;
                 }
@@ -243,5 +259,23 @@ mod tests {
 
         // 0x12 -> 18
         assert_eq!(cpu.registers[0], 18);
+    }
+
+    #[test]
+    fn test_cpu_jp_instruction() {
+        let mut cpu = CPU::new();
+        // Write into 0x200 -> 0x8014 which is an add
+        cpu.memory.write_into(0x8014, 0x200);
+
+        // ld registers[0], 1
+        cpu.set_opcode(0x6001);
+        // JP 0x200
+        cpu.set_opcode(0x1200);
+
+        cpu.run();
+
+        // If not fails means that the add has been carried on,
+        // so thats means that the code has jumped
+        assert_eq!(cpu.registers[0], 1);
     }
 }
