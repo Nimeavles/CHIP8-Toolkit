@@ -12,6 +12,7 @@ This is an experimental **CHIP8 Interpreter** written on rust.
 | `RET`                 | `0x00EE`   | Return from a function                       | :white_check_mark:
 | `ADD Vx, Vy`          | `0x6XY4`   | Add the Vy register to the Vx value          | :white_check_mark:
 | `SE Vx, NN`           | `0x3XNN`   | Skips the next instruction if Vx == NN       | :white_check_mark:
+| `SNE Vx, NN`          | `0x4XNN`   | Skips the next instruction if Vx != NN       | :white_check_mark:
 
 ## Usage
 

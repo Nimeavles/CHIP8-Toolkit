@@ -128,6 +128,19 @@ impl CPU {
         }
     }
 
+    /**
+     * Skips the next instruction if Vx != NN
+     */
+    fn skip_next_instruction_if_not_equals(&mut self, register: u8, value: u8) {
+        if register > N_CPU_REGISTERS {
+            panic!("Attempted to write on an undefined register: {register}");
+        }
+
+        if self.registers[register as usize] != value {
+            self.memory.read_pc += 2;
+        }
+    }
+
     fn parse_12bit_address(&self, opcode: Opcode) -> u16 {
         let op1 = opcode.1 as u16;
         let op2 = opcode.2 as u16;
@@ -171,6 +184,11 @@ impl CPU {
                 (0x3, _, _, _) => {
                     let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
                     self.skip_next_instruction_if_equals(opcodes.1, parsed_value_to_compare);
+                }
+                // if Vx != NN
+                (0x4, _, _, _) => {
+                    let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
+                    self.skip_next_instruction_if_not_equals(opcodes.1, parsed_value_to_compare);
                 }
                 // Jp instruction. jp NNN
                 (0x1, _, _, _) => {
@@ -317,5 +335,18 @@ mod tests {
 
         // 8 = 2 bytes + 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
         assert_eq!(cpu.memory.read_pc, 8);
+    }
+
+    #[test]
+    fn test_cpu_skip_instruction_if_not_equals() {
+        let mut cpu = CPU::new();
+
+        // If V0 == 0x01 -> Skip 1 instruction
+        cpu.set_opcode(0x4001);
+
+        cpu.run();
+
+        // 6 = 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
+        assert_eq!(cpu.memory.read_pc, 6);
     }
 }
