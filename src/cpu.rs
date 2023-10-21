@@ -116,12 +116,31 @@ impl CPU {
         self.memory.read_pc = self.stack.pop(self.stack_pointer);
     }
 
+    /**
+     * Skips the next instruction if Vx = NN
+     */
+    fn skip_next_instruction_if_equals(&mut self, register: u8, value: u8) {
+        if register > N_CPU_REGISTERS {
+            panic!("Attempted to write on an undefined register: {register}");
+        }
+        if self.registers[register as usize] == value {
+            self.memory.read_pc += 2;
+        }
+    }
+
     fn parse_12bit_address(&self, opcode: Opcode) -> u16 {
         let op1 = opcode.1 as u16;
         let op2 = opcode.2 as u16;
         let op3 = opcode.3 as u16;
 
         op3 << 0 | op2 << 4 | op1 << 8
+    }
+
+    /**
+     * Parse 2 nibbles into a 1 byte hex value
+     */
+    fn parse_8bit_address(&self, nibble1: u8, nibble2: u8) -> u8 {
+        nibble1 << 4 | nibble2
     }
 
     /**
@@ -136,7 +155,7 @@ impl CPU {
             match opcodes {
                 // Assign a value to a register. Vx = NN
                 (0x6, _, _, _) => {
-                    let value_to_set = opcodes.2 << 4 | opcodes.3;
+                    let value_to_set = self.parse_8bit_address(opcodes.2, opcodes.3);
 
                     self.set_value_to_register_operation(opcodes.1, value_to_set);
                 }
@@ -147,6 +166,11 @@ impl CPU {
                     if overflow {
                         self.registers[15] = 1;
                     }
+                }
+                // if Vx = NN
+                (0x3, _, _, _) => {
+                    let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
+                    self.skip_next_instruction_if_equals(opcodes.1, parsed_value_to_compare);
                 }
                 // Jp instruction. jp NNN
                 (0x1, _, _, _) => {
@@ -277,5 +301,21 @@ mod tests {
         // If not fails means that the add has been carried on,
         // so thats means that the code has jumped
         assert_eq!(cpu.registers[0], 1);
+    }
+
+    #[test]
+    fn test_cpu_skip_instruction_if_equals() {
+        let mut cpu = CPU::new();
+
+        // LD V0, 0x01
+        cpu.set_opcode(0x6001);
+
+        // If V0 == 0x01 -> Skip 1 instruction
+        cpu.set_opcode(0x3001);
+
+        cpu.run();
+
+        // 8 = 2 bytes + 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
+        assert_eq!(cpu.memory.read_pc, 8);
     }
 }
