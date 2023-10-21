@@ -95,6 +95,20 @@ impl CPU {
         false
     }
 
+    /**
+     * Add a value to the Vx register
+     */
+    fn add_value_to_register_operation(&mut self, register: u8, value: u8) {
+        if register > N_CPU_REGISTERS {
+            panic!("Attempted to write on an undefined register: {register}");
+        }
+
+        self.registers[register as usize] += value;
+    }
+
+    /**
+     * Substract Vx - Vy
+     */
     fn sub_operation(&mut self, x: u8, y: u8) -> bool {
         let x_register = self.registers[x as usize];
         let y_register = self.registers[y as usize];
@@ -231,7 +245,7 @@ impl CPU {
 
     /**
     * Enter into a loop with will fetch opcodes from memory,
-      then it would be parsed and matched to be executed.
+    then it would be parsed and matched to be executed.
     * It is considered the entry point of the program
     */
     pub fn run(&mut self) {
@@ -242,11 +256,44 @@ impl CPU {
             let y_register = opcodes.2;
 
             match opcodes {
+                // Ret instruction
+                (0, 0, 0xE, 0xE) => {
+                    self.ret_operation();
+                }
+                // Jp instruction. jp NNN
+                (0x1, _, _, _) => {
+                    let parsed_address_to_jump = self.parse_12bit_address(opcodes);
+                    self.jp_operation(parsed_address_to_jump);
+                }
+                // Call instruction
+                (0x2, _, _, _) => {
+                    self.call_operation(self.parse_12bit_address(opcodes));
+                }
+                // if Vx == NN
+                (0x3, _, _, _) => {
+                    let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
+                    self.skip_next_instruction_if_equals(x_register, parsed_value_to_compare);
+                }
+                // if Vx != NN
+                (0x4, _, _, _) => {
+                    let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
+                    self.skip_next_instruction_if_not_equals(x_register, parsed_value_to_compare);
+                }
+                // if Vx == Vy
+                (0x5, _, _, 0x0) => {
+                    self.skip_next_instruction_if_registers_equals(x_register, y_register);
+                }
                 // Assign a value to a register. Vx = NN
                 (0x6, _, _, _) => {
                     let value_to_set = self.parse_8bit_address(opcodes.2, opcodes.3);
 
                     self.set_value_to_register_operation(opcodes.1, value_to_set);
+                }
+                // Add a value to a register
+                (0x7, _, _, _) => {
+                    let value_to_set = self.parse_8bit_address(opcodes.2, opcodes.3);
+
+                    self.add_value_to_register_operation(x_register, value_to_set);
                 }
                 // Move the Vy value to Vx
                 (0x8, _, _, 0x0) => {
@@ -279,33 +326,6 @@ impl CPU {
                     if overflow {
                         self.registers[15] = 1;
                     }
-                }
-                // if Vx == NN
-                (0x3, _, _, _) => {
-                    let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
-                    self.skip_next_instruction_if_equals(x_register, parsed_value_to_compare);
-                }
-                // if Vx != NN
-                (0x4, _, _, _) => {
-                    let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
-                    self.skip_next_instruction_if_not_equals(x_register, parsed_value_to_compare);
-                }
-                // if Vx == Vy
-                (0x5, _, _, 0x0) => {
-                    self.skip_next_instruction_if_registers_equals(x_register, y_register);
-                }
-                // Jp instruction. jp NNN
-                (0x1, _, _, _) => {
-                    let parsed_address_to_jump = self.parse_12bit_address(opcodes);
-                    self.jp_operation(parsed_address_to_jump);
-                }
-                // Call instruction
-                (0x2, _, _, _) => {
-                    self.call_operation(self.parse_12bit_address(opcodes));
-                }
-                // Ret instruction
-                (0, 0, 0xE, 0xE) => {
-                    self.ret_operation();
                 }
                 // Halt instruction
                 (0, 0, 0, 0) => {
@@ -557,5 +577,16 @@ mod tests {
         cpu.run();
 
         assert_eq!(cpu.registers[15], 1);
+    }
+
+    #[test]
+    fn test_cpu_add_value_to_register() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x7001);
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[0], 1);
     }
 }
