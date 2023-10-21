@@ -106,6 +106,14 @@ impl CPU {
         self.registers[x as usize] |= self.registers[y as usize];
     }
 
+    fn bitwise_and_operation(&mut self, x: u8, y: u8) {
+        if x > N_CPU_REGISTERS || y > N_CPU_REGISTERS {
+            panic!("Attempted to write on an undefined register: {x} or {y}");
+        }
+
+        self.registers[x as usize] &= self.registers[y as usize];
+    }
+
     /**
      * Exec jp instruction
      */
@@ -200,6 +208,9 @@ impl CPU {
         loop {
             let opcodes: Opcode = self.parse_opcode();
 
+            let x_register = opcodes.1;
+            let y_register = opcodes.2;
+
             match opcodes {
                 // Assign a value to a register. Vx = NN
                 (0x6, _, _, _) => {
@@ -209,7 +220,7 @@ impl CPU {
                 }
                 // Add operation. Vx += Vy
                 (0x8, _, _, 0x4) => {
-                    let overflow = self.add_operation(opcodes.1, opcodes.2);
+                    let overflow = self.add_operation(x_register, y_register);
 
                     if overflow {
                         self.registers[15] = 1;
@@ -217,25 +228,29 @@ impl CPU {
                 }
                 // Move the Vy value to Vx
                 (0x8, _, _, 0x0) => {
-                    self.move_y_register_value_to_x_instruction(opcodes.1, opcodes.2);
+                    self.move_y_register_value_to_x_instruction(x_register, y_register);
                 }
                 // Bitwise OR operation
                 (0x8, _, _, 0x1) => {
-                    self.bitwise_or_operation(opcodes.1, opcodes.2);
+                    self.bitwise_or_operation(x_register, y_register);
+                }
+                // Bitwise AND operation
+                (0x8, _, _, 0x2) => {
+                    self.bitwise_and_operation(x_register, y_register);
                 }
                 // if Vx == NN
                 (0x3, _, _, _) => {
                     let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
-                    self.skip_next_instruction_if_equals(opcodes.1, parsed_value_to_compare);
+                    self.skip_next_instruction_if_equals(x_register, parsed_value_to_compare);
                 }
                 // if Vx != NN
                 (0x4, _, _, _) => {
                     let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
-                    self.skip_next_instruction_if_not_equals(opcodes.1, parsed_value_to_compare);
+                    self.skip_next_instruction_if_not_equals(x_register, parsed_value_to_compare);
                 }
                 // if Vx == Vy
                 (0x5, _, _, 0x0) => {
-                    self.skip_next_instruction_if_registers_equals(opcodes.1, opcodes.2)
+                    self.skip_next_instruction_if_registers_equals(x_register, y_register);
                 }
                 // Jp instruction. jp NNN
                 (0x1, _, _, _) => {
@@ -443,5 +458,20 @@ mod tests {
         cpu.run();
 
         assert_eq!(cpu.registers[0], 1);
+    }
+
+    #[test]
+    fn test_cpu_bitwise_and_operation() {
+        let mut cpu = CPU::new();
+
+        // LD V1, 0x01
+        cpu.set_opcode(0x6101);
+
+        // AND V0, V1
+        cpu.set_opcode(0x8012);
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[0], 0);
     }
 }
