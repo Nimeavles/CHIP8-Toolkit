@@ -66,6 +66,17 @@ impl CPU {
     }
 
     /**
+     * Move to Vx, Xy. (**LD Vx, Vy**)
+     */
+    fn move_y_register_value_to_x_instruction(&mut self, x: u8, y: u8) {
+        if x > N_CPU_REGISTERS || y > N_CPU_REGISTERS {
+            panic!("Attempted to write on an undefined register: {x} or {y}");
+        }
+
+        self.registers[x as usize] = self.registers[y as usize];
+    }
+
+    /**
      * Performs the add operation
      */
     fn add_operation(&mut self, x: u8, y: u8) -> bool {
@@ -192,6 +203,10 @@ impl CPU {
                     if overflow {
                         self.registers[15] = 1;
                     }
+                }
+                // Move the Vy value to Vx
+                (0x8, _, _, 0x0) => {
+                    self.move_y_register_value_to_x_instruction(opcodes.1, opcodes.2);
                 }
                 // if Vx == NN
                 (0x3, _, _, _) => {
@@ -383,5 +398,20 @@ mod tests {
 
         // 10 = 2 bytes + 2 bytes + 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
         assert_eq!(cpu.memory.read_pc, 10);
+    }
+
+    #[test]
+    fn test_cpu_move_y_register_value_to_x() {
+        let mut cpu = CPU::new();
+
+        // LD V1, 0x01
+        cpu.set_opcode(0x6101);
+
+        // LD V0, V1
+        cpu.set_opcode(0x8010);
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[0], 1);
     }
 }
