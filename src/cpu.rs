@@ -141,6 +141,19 @@ impl CPU {
         }
     }
 
+    /**
+     * Skips the next instruction if Vx == Vy
+     */
+    fn skip_next_instruction_if_registers_equals(&mut self, x: u8, y: u8) {
+        if x > N_CPU_REGISTERS || y > N_CPU_REGISTERS {
+            panic!("Attempted to write on an undefined register: {x} or {y}");
+        }
+
+        if self.registers[x as usize] == self.registers[y as usize] {
+            self.memory.read_pc += 2;
+        }
+    }
+
     fn parse_12bit_address(&self, opcode: Opcode) -> u16 {
         let op1 = opcode.1 as u16;
         let op2 = opcode.2 as u16;
@@ -180,7 +193,7 @@ impl CPU {
                         self.registers[15] = 1;
                     }
                 }
-                // if Vx = NN
+                // if Vx == NN
                 (0x3, _, _, _) => {
                     let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
                     self.skip_next_instruction_if_equals(opcodes.1, parsed_value_to_compare);
@@ -189,6 +202,10 @@ impl CPU {
                 (0x4, _, _, _) => {
                     let parsed_value_to_compare = self.parse_8bit_address(opcodes.2, opcodes.3);
                     self.skip_next_instruction_if_not_equals(opcodes.1, parsed_value_to_compare);
+                }
+                // if Vx == Vy
+                (0x5, _, _, 0x0) => {
+                    self.skip_next_instruction_if_registers_equals(opcodes.1, opcodes.2)
                 }
                 // Jp instruction. jp NNN
                 (0x1, _, _, _) => {
@@ -348,5 +365,23 @@ mod tests {
 
         // 6 = 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
         assert_eq!(cpu.memory.read_pc, 6);
+    }
+
+    #[test]
+    fn test_cpu_skip_instruction_if_registers_equals() {
+        let mut cpu = CPU::new();
+
+        // LD V0, 0x01
+        cpu.set_opcode(0x6001);
+        // LD V1, 0x01
+        cpu.set_opcode(0x6101);
+
+        // If V0 == V1 -> Skip 1 instruction
+        cpu.set_opcode(0x5010);
+
+        cpu.run();
+
+        // 10 = 2 bytes + 2 bytes + 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
+        assert_eq!(cpu.memory.read_pc, 10);
     }
 }

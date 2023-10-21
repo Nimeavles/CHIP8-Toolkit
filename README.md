@@ -13,6 +13,7 @@ This is an experimental **CHIP8 Interpreter** written on rust.
 | `ADD Vx, Vy`          | `0x6XY4`   | Add the Vy register to the Vx value          | :white_check_mark:
 | `SE Vx, NN`           | `0x3XNN`   | Skips the next instruction if Vx == NN       | :white_check_mark:
 | `SNE Vx, NN`          | `0x4XNN`   | Skips the next instruction if Vx != NN       | :white_check_mark:
+| `SE Vx, Vy`           | `0x5XY0`   | Skips the next instruction if Vx == Vy       | :white_check_mark:
 
 ## Usage
 
