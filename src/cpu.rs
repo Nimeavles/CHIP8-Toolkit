@@ -90,7 +90,23 @@ impl CPU {
             return true;
         }
 
-        self.registers[x as usize] = x_register + y_register;
+        self.registers[x as usize] += y_register;
+
+        false
+    }
+
+    fn sub_operation(&mut self, x: u8, y: u8) -> bool {
+        let x_register = self.registers[x as usize];
+        let y_register = self.registers[y as usize];
+
+        // Cast to i16 to avoid panicking when attempting an overflow
+        if (x_register as i16 - y_register as i16) > 255
+            || (x_register as i16 - y_register as i16) < 0
+        {
+            return true;
+        }
+
+        self.registers[x as usize] -= y_register;
 
         false
     }
@@ -232,14 +248,6 @@ impl CPU {
 
                     self.set_value_to_register_operation(opcodes.1, value_to_set);
                 }
-                // Add operation. Vx += Vy
-                (0x8, _, _, 0x4) => {
-                    let overflow = self.add_operation(x_register, y_register);
-
-                    if overflow {
-                        self.registers[15] = 1;
-                    }
-                }
                 // Move the Vy value to Vx
                 (0x8, _, _, 0x0) => {
                     self.move_y_register_value_to_x_instruction(x_register, y_register);
@@ -255,6 +263,22 @@ impl CPU {
                 // Bitwise XOR operation
                 (0x8, _, _, 0x3) => {
                     self.bitwise_xor_operation(x_register, y_register);
+                }
+                // Add operation. Vx += Vy
+                (0x8, _, _, 0x4) => {
+                    let overflow = self.add_operation(x_register, y_register);
+
+                    if overflow {
+                        self.registers[15] = 1;
+                    }
+                }
+                // SUB Vx, Vy
+                (0x8, _, _, 0x5) => {
+                    let overflow = self.sub_operation(x_register, y_register);
+
+                    if overflow {
+                        self.registers[15] = 1;
+                    }
                 }
                 // if Vx == NN
                 (0x3, _, _, _) => {
@@ -506,5 +530,32 @@ mod tests {
         cpu.run();
 
         assert_eq!(cpu.registers[0], 1);
+    }
+
+    #[test]
+    fn test_cpu_sub_operation() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x8015);
+
+        cpu.registers[0] = 2;
+        cpu.registers[1] = 1;
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[0], 1);
+    }
+
+    #[test]
+    fn test_cpu_sub_overflow_operation() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x8015);
+
+        cpu.registers[1] = 1;
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[15], 1);
     }
 }
