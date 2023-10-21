@@ -96,6 +96,17 @@ impl CPU {
     }
 
     /**
+     * Bitwise Or Operation among registers
+     */
+    fn bitwise_or_operation(&mut self, x: u8, y: u8) {
+        if x > N_CPU_REGISTERS || y > N_CPU_REGISTERS {
+            panic!("Attempted to write on an undefined register: {x} or {y}");
+        }
+
+        self.registers[x as usize] |= self.registers[y as usize];
+    }
+
+    /**
      * Exec jp instruction
      */
     fn jp_operation(&mut self, address: u16) {
@@ -207,6 +218,10 @@ impl CPU {
                 // Move the Vy value to Vx
                 (0x8, _, _, 0x0) => {
                     self.move_y_register_value_to_x_instruction(opcodes.1, opcodes.2);
+                }
+                // Bitwise OR operation
+                (0x8, _, _, 0x1) => {
+                    self.bitwise_or_operation(opcodes.1, opcodes.2);
                 }
                 // if Vx == NN
                 (0x3, _, _, _) => {
@@ -409,6 +424,21 @@ mod tests {
 
         // LD V0, V1
         cpu.set_opcode(0x8010);
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[0], 1);
+    }
+
+    #[test]
+    fn test_cpu_bitwise_or_operation() {
+        let mut cpu = CPU::new();
+
+        // LD V1, 0x01
+        cpu.set_opcode(0x6101);
+
+        // OR V0, V1
+        cpu.set_opcode(0x8011);
 
         cpu.run();
 
