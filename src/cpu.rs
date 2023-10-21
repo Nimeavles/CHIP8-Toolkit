@@ -106,12 +106,26 @@ impl CPU {
         self.registers[x as usize] |= self.registers[y as usize];
     }
 
+    /**
+     * Bitwise And Operation among registers
+     */
     fn bitwise_and_operation(&mut self, x: u8, y: u8) {
         if x > N_CPU_REGISTERS || y > N_CPU_REGISTERS {
             panic!("Attempted to write on an undefined register: {x} or {y}");
         }
 
         self.registers[x as usize] &= self.registers[y as usize];
+    }
+
+    /**
+     * Bitwise Xor Operation among registers
+     */
+    fn bitwise_xor_operation(&mut self, x: u8, y: u8) {
+        if x > N_CPU_REGISTERS || y > N_CPU_REGISTERS {
+            panic!("Attempted to write on an undefined register: {x} or {y}");
+        }
+
+        self.registers[x as usize] ^= self.registers[y as usize];
     }
 
     /**
@@ -237,6 +251,10 @@ impl CPU {
                 // Bitwise AND operation
                 (0x8, _, _, 0x2) => {
                     self.bitwise_and_operation(x_register, y_register);
+                }
+                // Bitwise XOR operation
+                (0x8, _, _, 0x3) => {
+                    self.bitwise_xor_operation(x_register, y_register);
                 }
                 // if Vx == NN
                 (0x3, _, _, _) => {
@@ -473,5 +491,20 @@ mod tests {
         cpu.run();
 
         assert_eq!(cpu.registers[0], 0);
+    }
+
+    #[test]
+    fn test_cpu_bitwise_xor_operation() {
+        let mut cpu = CPU::new();
+
+        // LD V1, 0x01
+        cpu.set_opcode(0x6101);
+
+        // XOR V0, V1
+        cpu.set_opcode(0x8013);
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[0], 1);
     }
 }

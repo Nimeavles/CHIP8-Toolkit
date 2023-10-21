@@ -17,6 +17,7 @@ This is an experimental **CHIP8 Interpreter** written on rust.
 | `LD Vx, Vy`           | `0x8XY0`   | Move a register value into a register        | :white_check_mark: 
 | `OR Vx, Vy`           | `0x8XY1`   | Bitwise OR Vx with Vy                        | :white_check_mark:
 | `AND Vx, Vy`          | `0x8XY2`   | Bitwise AND Vx with Vy                       | :white_check_mark:
+| `XOR Vx, Vy`          | `0x8XY3`   | Bitwise XOR Vx with Vy                       | :white_check_mark:
 
 ## Usage
 
