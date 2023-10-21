@@ -20,6 +20,7 @@ This is an experimental **CHIP8 Interpreter** written on rust.
 | `XOR Vx, Vy`          | `0x8XY3`   | Bitwise XOR Vx with Vy                       | :white_check_mark:
 | `ADD Vx, Vy`          | `0x8XY4`   | Add the Vy register to the Vx value          | :white_check_mark:
 | `SUB Vx, Vy`          | `0x8XY5`   | Sub the Vy register to the Vx value          | :white_check_mark:
+| `SHR Vx, {, Vy}`      | `0x8XY5`   | If Vx == 1, set Vf. Then divide Vx by 2      | :white_check_mark:
 
 ## Usage
 

@@ -159,6 +159,19 @@ impl CPU {
     }
 
     /**
+     * If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
+     */
+    fn bitwise_shr_operation(&mut self, x: u8) {
+        if self.registers[x as usize] >> 1 == 1 {
+            self.registers[15] = 1;
+        } else {
+            self.registers[15] = 0;
+        }
+
+        self.registers[x as usize] >>= 1;
+    }
+
+    /**
      * Exec jp instruction
      */
     fn jp_operation(&mut self, address: u16) {
@@ -326,6 +339,10 @@ impl CPU {
                     if overflow {
                         self.registers[15] = 1;
                     }
+                }
+                // If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
+                (0x8, _, _, 0x6) => {
+                    self.bitwise_shr_operation(x_register);
                 }
                 // Halt instruction
                 (0, 0, 0, 0) => {
@@ -588,5 +605,31 @@ mod tests {
         cpu.run();
 
         assert_eq!(cpu.registers[0], 1);
+    }
+
+    #[test]
+    fn test_cpu_shr_instruction() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x8016);
+
+        cpu.registers[0] = 4;
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[0], 2);
+    }
+
+    #[test]
+    fn test_cpu_shr_vf_set_instruction() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x8016);
+
+        cpu.registers[0] = 2;
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[15], 1);
     }
 }
