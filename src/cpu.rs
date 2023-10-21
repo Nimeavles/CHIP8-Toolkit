@@ -126,6 +126,19 @@ impl CPU {
     }
 
     /**
+     * Substract Vx - Vy and save it on Vx
+     */
+    fn sub_vx_minus_vy_operation(&mut self, x: u8, y: u8) {
+        if self.registers[y as usize] < self.registers[x as usize] {
+            self.registers[15] = 1;
+            return;
+        }
+
+        self.registers[x as usize] = self.registers[y as usize] - self.registers[x as usize];
+        self.registers[15] = 0;
+    }
+
+    /**
      * Bitwise Or Operation among registers
      */
     fn bitwise_or_operation(&mut self, x: u8, y: u8) {
@@ -343,6 +356,10 @@ impl CPU {
                 // If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
                 (0x8, _, _, 0x6) => {
                     self.bitwise_shr_operation(x_register);
+                }
+                // Vx = Vy - Vx
+                (0x8, _, _, 0x7) => {
+                    self.sub_vx_minus_vy_operation(x_register, y_register);
                 }
                 // Halt instruction
                 (0, 0, 0, 0) => {
@@ -627,6 +644,34 @@ mod tests {
         cpu.set_opcode(0x8016);
 
         cpu.registers[0] = 2;
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[15], 1);
+    }
+
+    #[test]
+    fn test_cpu_sub_y_minus_x_instruction() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x8017);
+
+        cpu.registers[0] = 2;
+        cpu.registers[1] = 3;
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[0], 1);
+    }
+
+    #[test]
+    fn test_cpu_sub_y_minus_x_vf_set_instruction() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x8017);
+
+        cpu.registers[0] = 3;
+        cpu.registers[1] = 2;
 
         cpu.run();
 
