@@ -259,6 +259,19 @@ impl CPU {
         }
     }
 
+    /**
+     * Skips the next instruction if Vx != Vy
+     */
+    fn skip_next_instruction_if_registers_not_equals(&mut self, x: u8, y: u8) {
+        if x > N_CPU_REGISTERS || y > N_CPU_REGISTERS {
+            panic!("Attempted to write on an undefined register: {x} or {y}");
+        }
+
+        if self.registers[x as usize] != self.registers[y as usize] {
+            self.memory.read_pc += 2;
+        }
+    }
+
     fn parse_12bit_address(&self, opcode: Opcode) -> u16 {
         let op1 = opcode.1 as u16;
         let op2 = opcode.2 as u16;
@@ -369,6 +382,10 @@ impl CPU {
                 // If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
                 (0x8, _, _, 0xE) => {
                     self.bitwise_shl_operation(x_register);
+                }
+                // Skip next instruction if Vx != Vy
+                (0x9, _, _, 0x0) => {
+                    self.skip_next_instruction_if_registers_not_equals(x_register, y_register);
                 }
                 // Halt instruction
                 (0, 0, 0, 0) => {
@@ -713,5 +730,20 @@ mod tests {
         // Due to registers size, the result is 180.
         assert_eq!(cpu.registers[0], 180);
         assert_eq!(cpu.registers[15], 1);
+    }
+
+    #[test]
+    fn test_cpu_skip_instruction_if_registers_not_equals() {
+        let mut cpu = CPU::new();
+
+        // LD V0, 0x01
+        cpu.set_opcode(0x6001);
+        // If V0 == V1 -> Skip 1 instruction
+        cpu.set_opcode(0x9010);
+
+        cpu.run();
+
+        // 8 = 2 bytes + 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
+        assert_eq!(cpu.memory.read_pc, 8);
     }
 }
