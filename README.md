@@ -22,6 +22,7 @@ This is an experimental **CHIP8 Interpreter** written on rust.
 | `SUB Vx, Vy`          | `0x8XY5`   | Sub the Vy register to the Vx value                 | :white_check_mark:
 | `SHR Vx {, Vy}`       | `0x8XY6`   | If Vx == 1, set Vf. Then divide Vx by 2             | :white_check_mark:
 | `SUBN Vx, Vy`         | `0x8XY7`   | Sub the Vx register to the Vy value and saved on Vx | :white_check_mark:
+| `SHL Vx {, Vy}`       | `0x8XYE`   | If Vx MSB == 1, set Vf. Then multiply Vx by 2       | :white_check_mark:
 
 ## Usage
 

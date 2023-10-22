@@ -175,13 +175,18 @@ impl CPU {
      * If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
      */
     fn bitwise_shr_operation(&mut self, x: u8) {
-        if self.registers[x as usize] >> 1 == 1 {
-            self.registers[15] = 1;
-        } else {
-            self.registers[15] = 0;
-        }
+        self.registers[15] = self.registers[x as usize] >> 1;
 
         self.registers[x as usize] >>= 1;
+    }
+
+    /**
+     * If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
+     */
+    fn bitwise_shl_operation(&mut self, x: u8) {
+        self.registers[15] = (self.registers[x as usize] >> 7) & 1;
+
+        self.registers[x as usize] <<= 1;
     }
 
     /**
@@ -360,6 +365,10 @@ impl CPU {
                 // Vx = Vy - Vx
                 (0x8, _, _, 0x7) => {
                     self.sub_vx_minus_vy_operation(x_register, y_register);
+                }
+                // If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
+                (0x8, _, _, 0xE) => {
+                    self.bitwise_shl_operation(x_register);
                 }
                 // Halt instruction
                 (0, 0, 0, 0) => {
@@ -675,6 +684,34 @@ mod tests {
 
         cpu.run();
 
+        assert_eq!(cpu.registers[15], 1);
+    }
+
+    #[test]
+    fn test_cpu_shl_instruction() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x801E);
+
+        cpu.registers[0] = 72;
+
+        cpu.run();
+
+        assert_eq!(cpu.registers[0], 144);
+    }
+
+    #[test]
+    fn test_cpu_shl_vf_instruction() {
+        let mut cpu = CPU::new();
+
+        cpu.set_opcode(0x801E);
+
+        cpu.registers[0] = 218;
+
+        cpu.run();
+
+        // Due to registers size, the result is 180.
+        assert_eq!(cpu.registers[0], 180);
         assert_eq!(cpu.registers[15], 1);
     }
 }
