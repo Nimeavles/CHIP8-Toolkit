@@ -45,8 +45,8 @@ impl Memory {
     pub fn new() -> Self {
         Self {
             memory: vec![0x0; MAX_MEMORY_SIZE],
-            pc: 0x000,
-            read_pc: 0x000,
+            pc: 0x200,
+            read_pc: 0x200,
         }
     }
 
@@ -54,10 +54,17 @@ impl Memory {
      * Writes an 16bits opcode into memory
      */
     pub fn write(&mut self, data: u16) {
-        for i in data.to_le_bytes() {
+        for i in data.to_be_bytes() {
             self.memory[self.pc as usize] = i;
             self.pc += 1;
         }
+    }
+
+    /**
+     * Copy a ROM into memory
+     */
+    pub fn memcpy(&mut self, mem: &[u8]) {
+        self.memory[0x200..MAX_MEMORY_SIZE].clone_from_slice(mem);
     }
 
     /**
@@ -70,7 +77,7 @@ impl Memory {
 
         let mut address_to_write = address;
 
-        for i in data.to_le_bytes() {
+        for i in data.to_be_bytes() {
             self.memory[address_to_write as usize] = i;
             address_to_write += 1;
         }
@@ -90,7 +97,7 @@ impl Memory {
         let byte_1 = bytes_readed[0] as u16;
         let byte_2 = bytes_readed[1] as u16;
 
-        byte_2 << 8 | byte_1
+        byte_1 << 8 | byte_2
     }
 }
 

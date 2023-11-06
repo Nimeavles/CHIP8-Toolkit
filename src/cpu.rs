@@ -32,6 +32,13 @@ impl CPU {
         self.memory.write(opcode);
     }
 
+    /**
+     * Load the Rom to the memory
+     */
+    pub fn load_rom(&mut self, rom: &[u8]) {
+        self.memory.memcpy(rom);
+    }
+
     // CPU OPCODE DECODING
     // 0X80F12
     // 8 -> First nibble (4bits)
@@ -444,7 +451,7 @@ mod tests {
         cpu.registers[3] = 2;
         cpu.registers[2] = 1;
 
-        cpu.set_opcode(0x2000);
+        cpu.set_opcode(0x2200);
 
         cpu.run();
     }
@@ -454,7 +461,7 @@ mod tests {
         let mut cpu = CPU::new();
 
         // set the instructions to exec on 0x50 address
-        cpu.memory.write_into(0x8324, 0x100);
+        cpu.memory.write_into(0x8324, 0x300);
 
         cpu.set_opcode(0x8014);
 
@@ -463,11 +470,11 @@ mod tests {
 
         cpu.registers[2 as usize] = 2;
 
-        cpu.set_opcode(0x2100);
+        cpu.set_opcode(0x2300);
         cpu.set_opcode(0x8424);
 
         // Writes the ret opcode after the executed function on 0x100
-        cpu.memory.write_into(0xEE, 0x102);
+        cpu.memory.write_into(0xEE, 0x302);
 
         cpu.run();
 
@@ -518,7 +525,7 @@ mod tests {
         cpu.run();
 
         // 8 = 2 bytes + 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
-        assert_eq!(cpu.memory.read_pc, 8);
+        assert_eq!(cpu.memory.read_pc, 0x200 + 8);
     }
 
     #[test]
@@ -531,7 +538,7 @@ mod tests {
         cpu.run();
 
         // 6 = 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
-        assert_eq!(cpu.memory.read_pc, 6);
+        assert_eq!(cpu.memory.read_pc, 0x200 + 6);
     }
 
     #[test]
@@ -549,7 +556,7 @@ mod tests {
         cpu.run();
 
         // 10 = 2 bytes + 2 bytes + 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
-        assert_eq!(cpu.memory.read_pc, 10);
+        assert_eq!(cpu.memory.read_pc, 0x200 + 10);
     }
 
     #[test]
@@ -744,6 +751,6 @@ mod tests {
         cpu.run();
 
         // 8 = 2 bytes + 2 bytes + 2 bytes (skipped instruction) + 2 bytes (Halt)
-        assert_eq!(cpu.memory.read_pc, 8);
+        assert_eq!(cpu.memory.read_pc, 0x200 + 8);
     }
 }
