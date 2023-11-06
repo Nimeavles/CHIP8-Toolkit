@@ -15,3 +15,5 @@
 - [🖇️Chip8 registers explanation](https://craigthomas.ca/blog/2018/09/07/writing-a-chip-8-emulator-instruction-set-part-5/)
 
 - [🖇️Full Chip8 Dev Guide](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM#1.0)
+
+- [🖇️Chip 8 assembler](https://github.com/wernsey/chip8)

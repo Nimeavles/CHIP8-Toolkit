@@ -27,8 +27,20 @@ This is an experimental **CHIP8 Interpreter** written on rust.
 
 ## Usage
 
-This proyect still being on an early development stage.
+This proyect still being on an early development stage. Although, you can use it. I don't primise anything.
 
-Soon will be posted how to use it!
+For running the interpreter:
+
+```sh
+cargo build --release
+
+cargo run <my_file.ch8> --release
+```
+
+## Development
+
+On [`REFERENCES.md`](./REFERENCES.md) you can find some links which would help you to understand some concepts.
+
+There is a link to a chip8 assembler, if you want to try it!
 
 ###### Made by Nimeavles :heart:

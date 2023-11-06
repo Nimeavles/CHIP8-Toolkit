@@ -1,26 +1,45 @@
 mod cpu;
 mod memory;
 
+use std::{
+    env,
+    fs::File,
+    io::{BufReader, Read, Result},
+};
+
 use cpu::CPU;
 
-/// Reads the opcode (eventually, from memory)
-/// Decodes instruction
-/// Dispatches execution of the operation to a specific function
-/// Matches decoded instruction to known opcodes
+fn main() -> Result<()> {
+    let path_to_rom = match env::args().nth(1) {
+        Some(path) => path,
+        None => {
+            eprintln!("\n\u{001b}[31mError (Missing argument) => path\n\u{001b}[32mUsage: cargo run <my_file.ch8>\u{001b}[0m");
+            std::process::exit(1);
+        }
+    };
 
-#[allow(unused_doc_comments, unused_variables)]
-fn main() {
+    let mut file = BufReader::new(match File::open(path_to_rom) {
+        Ok(f) => f,
+        Err(err) => {
+            eprintln!("\u{001b}[31mError: {err}\u{001b}[0m");
+            std::process::exit(1);
+        }
+    });
+
+    let mut buf = CPU::create_buffer();
     let mut cpu = CPU::new();
 
-    /// 8XY4 -> Add Opcode
-    /// Vx += Vy
-    cpu.set_opcode(0x8014);
-    cpu.set_opcode(0x8024);
-    cpu.set_opcode(0x8034);
+    match file.read(&mut buf) {
+        Ok(_) => {}
+        Err(err) => {
+            eprintln!("\u{001b}[31mError: {err}\u{001b}[0m");
+            std::process::exit(1);
+        }
+    };
 
-    cpu.registers[0 as usize] = 1;
-    cpu.registers[1 as usize] = 2;
-    cpu.registers[2 as usize] = 3;
+    cpu.load_rom(&buf);
 
     cpu.run();
+
+    Ok(())
 }
