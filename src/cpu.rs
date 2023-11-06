@@ -28,7 +28,7 @@ impl CPU {
     /**
      * Writes the given opcode on memory
      */
-    pub fn set_opcode(&mut self, opcode: u16) {
+    fn set_opcode(&mut self, opcode: u16) {
         self.memory.write(opcode);
     }
 
