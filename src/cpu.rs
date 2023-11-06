@@ -26,6 +26,13 @@ impl CPU {
     }
 
     /**
+     * Return a buffer to allocate the ROM
+     */
+    pub fn create_buffer() -> [u8; 4096 - 0x200] {
+        [0x0; 4096 - 0x200]
+    }
+
+    /**
      * Writes the given opcode on memory
      */
     fn set_opcode(&mut self, opcode: u16) {
