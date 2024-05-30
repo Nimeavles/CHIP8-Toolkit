@@ -2,6 +2,7 @@
 use crate::memory::{Memory, Stack};
 
 const N_CPU_REGISTERS: u8 = 16;
+const ROM_SIZE: usize = 4096 - 0x200;
 
 type Opcode = (u8, u8, u8, u8);
 
@@ -28,8 +29,8 @@ impl CPU {
     /**
      * Return a buffer to allocate the ROM
      */
-    pub fn create_buffer() -> [u8; 4096 - 0x200] {
-        [0x0; 4096 - 0x200]
+    pub fn create_buffer() -> [u8; ROM_SIZE] {
+        [0x0; ROM_SIZE]
     }
 
     /**
